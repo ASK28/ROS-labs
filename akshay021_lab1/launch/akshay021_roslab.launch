@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Launch the simulator -->
+  <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
+  
+  <!-- Launch lidar processing node -->
+  <node pkg="akshay021_lab1" name="lidar_processing" type="lidar_processing.py"/>
+
+</launch>
+
