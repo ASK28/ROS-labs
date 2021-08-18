@@ -16,6 +16,7 @@ class Safety(object):
         self.pub1 = rospy.Publisher('brake', AckermannDriveStamped, queue_size=1)
         #Publisher for /brake_bool
         self.pub2 = rospy.Publisher('brake_bool', Bool, queue_size=1)
+        self.pub2.publish(False)
         #Subscribers to /odom and /scan
         self.sub1 = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.sub2 = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
