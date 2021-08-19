@@ -5,7 +5,7 @@
   <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
   
   <!-- Launch the safety node -->
-  <node pkg="akshay021_lab2" name="AEB" type="akshay021_safety.py"/>
+  <node pkg="akshay021_lab2" name="akshay021_safety" type="akshay021_safety.py"/>
 
 </launch>
 
