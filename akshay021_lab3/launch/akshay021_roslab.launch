@@ -4,7 +4,7 @@
   <!-- Launch the simulator -->
   <include file="$(find f1tenth_simulator)/launch/simulator.launch"/>
   
-  <!-- Launch the safety node -->
+  <!-- Launch the wall follow node -->
   <node pkg="akshay021_lab3" name="akshay021_wall_follow" type="wall_follow.py"/>
 
 </launch>
