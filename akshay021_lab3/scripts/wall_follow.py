@@ -6,13 +6,14 @@ import numpy as np
 
 #ROS Imports
 import rospy
+from std_msgs.msg import String
 from sensor_msgs.msg import Image, LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 
 #PID CONTROL PARAMS
-kp = 14 # TODO
+kp = 11 # TODO
 ki = 0.0 # TODO
-kd = 0.05 # TODO
+kd = 0.5  # TODO
 servo_offset = 0.0
 prev_error = 0.0
 error = 0.0
@@ -23,7 +24,7 @@ ANGLE_RANGE = 360  # Hokuyo 10LX has 270 degrees scan
 DESIRED_DISTANCE_RIGHT = 0.55  # meters
 DESIRED_DISTANCE_LEFT = 0.8
 VELOCITY = 2.00  # meters per second
-CAR_LENGTH = 0.40  # Traxxas Rally is 20 inches or 0.5 meters
+CAR_LENGTH = 0.50  # Traxxas Rally is 20 inches or 0.5 meters
 
 
 class WallFollow:
@@ -34,6 +35,8 @@ class WallFollow:
         #Topics & Subs, Pubs
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
+
+        self.prev_time = float(str(rospy.Time.now()))
 
         self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1)  # TODO: Subscribe to LIDAR
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)  # TODO: Publish to drive
@@ -53,7 +56,7 @@ class WallFollow:
             elif np.isnan(i) == False:
                 pass
 
-        if angle < -45 or angle > 225:
+        if angle < -90 or angle > 270:
             raise ValueError('Angle not in range')
             return 0.0
         else:
@@ -69,19 +72,27 @@ class WallFollow:
         angle = 0.0
         #TODO: Use kp, ki & kd to implement a PID controller for
 
-        
+        curr_time = float(str(rospy.Time.now()))        
 
-        angle += np.deg2rad(kp*error + ki*integral + kd*(error-prev_error))
+        angle = np.deg2rad(kp*error + ki*integral + kd*((error-prev_error)/(curr_time-self.prev_time)))
+
+        if angle < np.deg2rad(-24):
+            angle = np.deg2rad(-24)
+        elif angle > np.deg2rad(24):
+            angle = np.deg2rad(24)
+        else:
+            pass
 
         print('error = ', error)
         print('old err = ', prev_error)
-        print('angle =', angle)
+        print(rospy.Time.now(), ' angle =', angle)
         integral += error
         prev_error = error
+        self.prev_time = curr_time
 
-        if -np.deg2rad(10) < angle < np.deg2rad(10):
+        if np.deg2rad(-10) < angle < np.deg2rad(10):
             velocity = 1.5
-        elif np.deg2rad(20) < angle < np.deg2rad(20):
+        elif np.deg2rad(-20) < angle < np.deg2rad(20):
             velocity = 1
         else:
             velocity = 0.5
@@ -99,10 +110,10 @@ class WallFollow:
         theta = 60
         b = self.getRange(data, 180)
         a = self.getRange(data, 180-theta)
+        print(a,b)
 
         theta = np.deg2rad(theta)
-        alpha = np.arctan((a*np.cos(theta)-b) /
-                          (a*np.sin(theta)))
+        alpha = np.arctan((a*np.cos(theta)-b)/(a*np.sin(theta)))
 
         dt = b*np.cos(alpha)
         dt1 = dt + CAR_LENGTH*np.sin(alpha)
@@ -117,13 +128,17 @@ class WallFollow:
         error = self.followLeft(data, DESIRED_DISTANCE_LEFT)  # TODO: replace with error returned by followLeft
         #send error to pid_control
         self.pid_control(error, VELOCITY)
-        print(data.ranges[810])
+        #print('left =', data.ranges[800:820])
+        #print('right =', data.ranges[260:280])
+        #print('fl =', data.ranges[620:640])
+        #print('fr =', data.ranges[500:520])
+        #print(data.ranges[810])
 
 
 def main(args):
     rospy.init_node("WallFollow_node", anonymous=True)
     wf = WallFollow()
-    rospy.sleep(0.1)
+    #rospy.sleep(0.1)
     rospy.spin()
 
 
