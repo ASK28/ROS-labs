@@ -3,8 +3,11 @@ from __future__ import print_function
 import sys
 import math
 import numpy as np
+<<<<<<< HEAD
 import itertools
 import operator
+=======
+>>>>>>> new labs added
 
 #ROS Imports
 import rospy
@@ -18,14 +21,20 @@ class reactive_follow_gap:
         lidarscan_topic = '/scan'
         drive_topic = '/nav'
 
+<<<<<<< HEAD
         self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1)  # TODO
         self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)  # TODO
+=======
+        self.lidar_sub = rospy.Subscriber(lidarscan_topic, LaserScan, self.lidar_callback, queue_size=1)
+        self.drive_pub = rospy.Publisher(drive_topic, AckermannDriveStamped, queue_size=1)
+>>>>>>> new labs added
 
     def preprocess_lidar(self, ranges):
         """ Preprocess the LiDAR scan array. Expert implementation includes:
             1.Setting each value to the mean over some window
             2.Rejecting high values (eg. > 3m)
         """
+<<<<<<< HEAD
         window_size = 3
         scan_deg = 120
         start_idx = (180-(scan_deg/2))*3
@@ -90,12 +99,35 @@ class reactive_follow_gap:
         #        proc_ranges[i] = 0.0
         #    except IndexError:
         #        pass
+=======
+        window_size = 3 #Convolution window size
+        scan_deg = 120 #Scan angle in front of car
+        bubble_radius = 1 #Radius of safety bubble
+        
+        start_idx = (180-(scan_deg/2))*3
+
+        proc_ranges = ranges[start_idx:start_idx+(3*scan_deg)+1]
+        proc_ranges = np.convolve(proc_ranges, np.ones(window_size)/window_size, mode='valid')
+
+        #proc_ranges = [3.0 if x > 3 else x for x in proc_ranges]
+
+        closest = np.nanmin(proc_ranges)
+        indices = [i for i,x in enumerate(proc_ranges) if x == closest]
+
+        for i in indices:
+            try:
+                bubble = proc_ranges[i-bubble_radius:i+bubble_radius+1]
+                proc_ranges[i-bubble_radius:i+bubble_radius+1] = np.zeros(len(bubble))
+            except IndexError:
+                pass
+>>>>>>> new labs added
         
         return proc_ranges
 
     def find_max_gap(self, free_space_ranges):
         """ Return the start index & end index of the max gap in free_space_ranges
         """
+<<<<<<< HEAD
         '''
         gaps = [[]]
         j = 0
@@ -117,6 +149,13 @@ class reactive_follow_gap:
         #print(np.where(free_space_ranges != 0.0))
 
         #gaps = [[i for i,value in it] for is_true, it in itertools.groupby(enumerate(free_space_ranges), lambda x: x >= 0.0) if x != 0.0]
+=======
+
+        nonzero = np.concatenate(([0], (np.asarray(free_space_ranges) != 0).view(np.int8), [0]))
+        abs_diff = np.abs(np.diff(nonzero))
+        gaps = list(np.where(abs_diff == 1)[0].reshape(-1,2))
+
+>>>>>>> new labs added
         gap_size = [len(i) for i in gaps]
 
         return gaps[gap_size.index(np.max(gap_size))]
@@ -124,7 +163,11 @@ class reactive_follow_gap:
     def find_best_point(self, start_i, end_i, ranges):
         """Start_i & end_i are start and end indicies of max-gap range, respectively
         Return index of best point in ranges
+<<<<<<< HEAD
 	Naive: Choose the furthest point within ranges and go there
+=======
+	    Naive: Choose the furthest point within ranges and go there
+>>>>>>> new labs added
         """
         point = list(ranges).index(np.max(ranges[start_i:end_i]))
         angle = np.deg2rad((((len(ranges)/2))/3)-point)
@@ -135,6 +178,7 @@ class reactive_follow_gap:
         """ Process each LiDAR scan as per the Follow Gap algorithm & publish an AckermannDriveStamped Message
         """
         ranges = list(data.ranges)
+<<<<<<< HEAD
         #ranges = [1,1,3,5,19,3,3,0.2,6,7,7,np.inf,np.inf,5,5,4,4,4,0.8,0.2,0.5,2,3,0.2]
         best_point_ttl = drive_angle_ttl = 0
 
@@ -151,14 +195,31 @@ class reactive_follow_gap:
             #Eliminate all points inside 'bubble' (set them to zero)
             proc_ranges = self.preprocess_lidar(ranges)
 
+=======
+        best_point_ttl = drive_angle_ttl = 0
+
+        # Loop used to manually control rate of publishing
+        for i in range(4):
+            #Find closest point to LiDAR
+            #Eliminate all points inside 'bubble' (set them to zero)
+            proc_ranges = self.preprocess_lidar(ranges)
+>>>>>>> new labs added
             #Find max length gap
             max_gap_index = self.find_max_gap(proc_ranges)
             #Find the best point in the gap
             best_point, drive_angle = self.find_best_point(max_gap_index[0], max_gap_index[1], proc_ranges)
 
+<<<<<<< HEAD
             best_point_ttl += best_point
             drive_angle_ttl += drive_angle
         
+=======
+            #Used to compute average
+            best_point_ttl += best_point
+            drive_angle_ttl += drive_angle
+        
+        #Average point and angle
+>>>>>>> new labs added
         best_point = best_point_ttl/4
         drive_angle = drive_angle_ttl/4       
       
